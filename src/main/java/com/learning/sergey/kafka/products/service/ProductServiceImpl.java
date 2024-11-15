@@ -2,6 +2,7 @@ package com.learning.sergey.kafka.products.service;
 
 import com.learning.sergey.kafka.core.ProductCreatedEvent;
 import com.learning.sergey.kafka.products.request.CreateProductRequest;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
@@ -21,8 +22,10 @@ public class ProductServiceImpl implements ProductService {
         String productId = UUID.randomUUID().toString();
         //TODO -> persist data into DB before sending the message to kafka broker.
         ProductCreatedEvent event = new ProductCreatedEvent(productId, request.getTitle(), request.getPrice(), request.getQuantity());
+        ProducerRecord<String, ProductCreatedEvent> producerRecord = new ProducerRecord<>("product-created-events-topic",productId, event);
+        producerRecord.headers().add("messageId", UUID.randomUUID().toString().getBytes());
         System.out.println("Before publishing an event");
-        SendResult<String, ProductCreatedEvent> result = kafkaTemplate.send("product-created-events-topic",productId, event ).get();
+        SendResult<String, ProductCreatedEvent> result = kafkaTemplate.send(producerRecord).get();
         System.out.println("Partition -> "+result.getRecordMetadata().partition());
         System.out.println("Offset -> "+result.getRecordMetadata().offset());
 
